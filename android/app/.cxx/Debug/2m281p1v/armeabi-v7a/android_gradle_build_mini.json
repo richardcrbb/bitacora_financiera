@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/home/criss/snap/flutter/common/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/home/criss/Android/Sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/home/criss/Documents/Mobileapp/bitacora_financiera_v1.3/bitacora_financiera/android/app/.cxx/Debug/2m281p1v/armeabi-v7a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/home/criss/Android/Sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/home/criss/Documents/Mobileapp/bitacora_financiera_v1.3/bitacora_financiera/android/app/.cxx/Debug/2m281p1v/armeabi-v7a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

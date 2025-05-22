@@ -1,0 +1,80 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'screens/overview_screen.dart';
+import 'screens/add_expenses_screen.dart';
+
+Future<void> main() async {
+  await Supabase.initialize(
+    url: 'http://192.168.0.10:8000', // Tu URL local de Supabase
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE3MTU1NTAwMDAsImV4cCI6MTk5OTk5OTk5OX0.kavy1ZGC7jBFNGO5IXZ62mWp3BvQVWuxZzLKpaQgBF0',
+  );
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Bitácora Financiera',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.indigo),
+      home: const HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  HomeScreenState createState() => HomeScreenState();
+}
+
+class HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
+
+  List<Widget> get _screens => [
+        const OverviewScreen(),
+        AgregarGastoScreen(
+          onGastoGuardado: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        ),
+      ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Bitácora Financiera'),
+      ),
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.indigo,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: 'Resumen',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add),
+            label: 'Nuevo Gasto',
+          ),
+        ],
+      ),
+    );
+  }
+}

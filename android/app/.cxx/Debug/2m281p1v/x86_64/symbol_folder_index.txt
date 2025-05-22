@@ -1,0 +1,1 @@
+/home/criss/Documents/Mobileapp/bitacora_financiera_v1.3/bitacora_financiera/build/app/intermediates/cxx/Debug/2m281p1v/obj/x86_64

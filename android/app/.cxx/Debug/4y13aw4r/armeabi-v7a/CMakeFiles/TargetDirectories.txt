@@ -1,0 +1,2 @@
+/home/criss/Documents/Mobileapp/bitacora_financiera/bitacora_financiera/android/app/.cxx/Debug/4y13aw4r/armeabi-v7a/CMakeFiles/edit_cache.dir
+/home/criss/Documents/Mobileapp/bitacora_financiera/bitacora_financiera/android/app/.cxx/Debug/4y13aw4r/armeabi-v7a/CMakeFiles/rebuild_cache.dir
