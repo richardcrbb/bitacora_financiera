@@ -303,7 +303,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> {
 Widget build(BuildContext context) {
   final screenWidth = MediaQuery.of(context).size.width;
   final columnWidth = screenWidth / 7;
-  final idWidth = columnWidth * 0.7;
+  final idWidth = columnWidth * 1;
   final categoriaWidth = columnWidth * 2;
   final descripcionWidth = columnWidth * 4;
   final montoWidth = columnWidth * 3;

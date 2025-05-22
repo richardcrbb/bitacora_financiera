@@ -50,7 +50,7 @@ class LocalDatabase {
 
   static Future<List<Map<String, dynamic>>> obtenerGastos() async {
     final db = await database;
-    return await db.query('expenses', orderBy: 'date DESC');
+    return await db.query('expenses', orderBy: 'id DESC');
   }
 
   static Future<void> borrarTodosLosGastos() async {
@@ -64,6 +64,7 @@ class LocalDatabase {
     'expenses',
     where: 'sincronizado = ?',
     whereArgs: [0],
+    orderBy: 'id DESC', 
   );
   }
   
@@ -93,7 +94,7 @@ static Future<List<Map<String, dynamic>>> obtenerGastosPaginados({
   final db = await database;
   return await db.query(
     'expenses',
-    orderBy: 'date DESC',
+    orderBy: 'id DESC',
     limit: limit,
     offset: offset,
   );
