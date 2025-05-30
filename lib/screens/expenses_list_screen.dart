@@ -243,25 +243,34 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> {
   }
 
   Widget _buildHeaderCell(String text, {double width = 120}) {
+    return Builder(
+    builder: (context) {
+      final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: width,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.indigo.shade50,
-        border: Border.all(color: Colors.grey.shade300),
+        color: Theme.of(context).colorScheme.primary.withAlpha(25),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.bold,
-          color: Colors.indigo,
+          color: colorScheme.primary,
         ),
         textAlign: TextAlign.center,
       ),
     );
+    }, );
   }
 
+  
+ 
+
   Widget _buildDataCell(dynamic value, {bool isAmount = false, bool isDate = false, double width = 120}) {
+    return Builder(
+    builder: (context) {
     final dateFormat = DateFormat('dd/MM/yyyy');
     final currencyFormat = NumberFormat.currency(
       symbol: '\$',
@@ -284,19 +293,26 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> {
       width: width,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-      ),
+        border: Border(
+          top: BorderSide(color: Theme.of(context).dividerColor),
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),),
       child: Text(
         textValue,
         style: TextStyle(
           fontWeight: isAmount ? FontWeight.bold : FontWeight.normal,
-          color: isAmount ? Colors.indigo : Colors.black,
+          color: isAmount 
+          ? Theme.of(context).colorScheme.secondary
+          : Theme.of(context).textTheme.bodyLarge?.color,
         ),
         textAlign: TextAlign.center,
         overflow: TextOverflow.ellipsis,
       ),
     );
+  } 
+  ) ; 
   }
+
 
 
 @override

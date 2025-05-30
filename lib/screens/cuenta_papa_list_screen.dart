@@ -183,7 +183,7 @@ class CuentaPapaListScreenState extends State<CuentaPapaListScreen> {
                                   '\$${_formatMonto(cuenta['monto'] ?? 0.0)}',
                                   textAlign: TextAlign.left,
                                   style: TextStyle(
-                                    color: (cuenta['tipo'] == 'egreso') ? Colors.red : Colors.black,
+                                    color: (cuenta['tipo'] == 'egreso') ? Colors.red : Colors.lightGreenAccent,
                                   ),
                                 ),
                               ),

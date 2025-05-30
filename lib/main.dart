@@ -36,7 +36,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Bitácora Financiera',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.indigo),
+      theme: ThemeData(primarySwatch: Colors.indigo,
+       brightness: Brightness.dark,
+        primaryColor: Colors.indigo[300],
+        colorScheme: ColorScheme.dark(
+          primary: Colors.indigo[300]!,
+          secondary: Colors.amber[300]!,
+          surface: const Color(0xFF121212),
+          //background: const Color(0xFF121212),
+          )
+        ),
       home: const HomeScreen(),
     );
   }
