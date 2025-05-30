@@ -22,6 +22,7 @@ class OverviewScreen extends StatefulWidget {
 class OverviewScreenState extends State<OverviewScreen> {
   bool _sincronizando = false;
 
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,6 +42,7 @@ class OverviewScreenState extends State<OverviewScreen> {
       ),
     );
   }
+  
 
   Widget _buildPieChartSection() {
     return FutureBuilder<Map<String, double>>(
@@ -61,7 +63,7 @@ class OverviewScreenState extends State<OverviewScreen> {
         
         return Padding(
           padding: const EdgeInsets.all(0),
-          child: construirGraficoCircular(datos),
+          child: construirGraficoCircular(datos, context),
         );
       },
     );
@@ -378,8 +380,7 @@ Future<Map<String, double>> obtenerGastosUltimos12Meses() async {
 
 // Grafico Circular 
 
-
-Widget construirGraficoCircular(Map<String, double> datos) {
+Widget construirGraficoCircular(Map<String, double> datos, BuildContext context) {
   final colores = [
     Colors.red, Colors.blue, Colors.green, Colors.orange,
     Colors.purple, Colors.teal, Colors.pink, Colors.brown,
@@ -395,16 +396,50 @@ Widget construirGraficoCircular(Map<String, double> datos) {
         height: 250,
         child: PieChart(
           PieChartData(
+            pieTouchData: PieTouchData(
+              touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                if (pieTouchResponse?.touchedSection != null) {
+                  final section = pieTouchResponse!.touchedSection!;
+                  final category = datos.keys.elementAt(section.touchedSectionIndex);
+                  final amount = datos[category]!;
+                  
+                  // Mostrar tooltip mientras se interactúa con el gráfico
+                  ScaffoldMessenger.of(context)
+                    ..removeCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '$category: ${NumberFormat.currency(locale: 'es_CO', symbol: 'COP', decimalDigits: 0).format(amount)}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                } else {
+                  // Limpiar el tooltip cuando no se toca ninguna sección
+                  ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                }
+              },
+              enabled: true,
+            ),
             sections: datos.entries.map((entry) {
               final color = colores[i % colores.length];
               final value = entry.value;
               i++;
               return PieChartSectionData(
                 value: value,
-                title: "${entry.key}: ${NumberFormat('#,###', 'es_CO').format(entry.value)}",
+                title: '${entry.key}\n${NumberFormat.compactCurrency(
+                  decimalDigits: 0,
+                  symbol: 'COP ',
+                  locale: 'es_CO'
+                ).format(value)}',
                 color: color,
                 radius: 120,
-                titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                titleStyle: const TextStyle(
+                  fontSize: 12, 
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               );
             }).toList(),
             centerSpaceRadius: 0,
@@ -424,6 +459,18 @@ Widget construirGraficoCircular(Map<String, double> datos) {
     ],
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
