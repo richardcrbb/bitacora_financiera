@@ -54,13 +54,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   List<Widget> get _screens => [
         const OverviewScreen(),
-        AgregarGastoScreen(
-          onGastoGuardado: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
-          },
-        ),
+        const AgregarGastoScreen(),
         const ExpensesListScreen(),
         const AgregarGastoPapaScreen(),
         const CuentaPapaListScreen(),

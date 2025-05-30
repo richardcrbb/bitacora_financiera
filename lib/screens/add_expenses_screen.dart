@@ -105,11 +105,14 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
         const SnackBar(content: Text('✅ Gasto guardado exitosamente')),
       );
 
-      if (widget.onGastoGuardado != null) {
-        widget.onGastoGuardado!();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
       } else {
-        Navigator.pop(context, true);
+        // Alternativa si no se puede hacer pop
+        widget.onGastoGuardado?.call();
       }
+
+      
     } catch (e, stacktrace) {
       log.severe('❌ Error al guardar el gasto', e, stacktrace);
       if (!mounted) return;

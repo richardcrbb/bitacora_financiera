@@ -144,7 +144,8 @@ Future<void> _sincronizarConSupabase() async {
   });
 
   try {
-    final gastosLocales = await LocalDatabase.obtenerGastosNoSincronizados();
+    final gastosLocales = List.from(await LocalDatabase.obtenerGastosNoSincronizados())
+     ..sort((a, b) => a['id'].compareTo(b['id']));
 
     if (gastosLocales.isEmpty) {
       throw Exception("No hay gastos locales para sincronizar");
@@ -230,7 +231,8 @@ Future<void> _sincronizarConSupabasePapa() async {
   });
 
   try {
-    final gastosLocales = await PapaLocalDatabase.instance.obtenerGastosNoSincronizados();
+    final gastosLocales = List.from(await PapaLocalDatabase.instance.obtenerGastosNoSincronizados())
+      ..sort((a, b) => a['id'].compareTo(b['id']));
 
     if (gastosLocales.isEmpty) {
       throw Exception("No hay gastos de cuenta_papa para sincronizar");
