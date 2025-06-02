@@ -51,6 +51,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> {
         offset: pagina * _pageSize,
       );
       
+      
       setState(() {
         _gastos = gastos;
         _currentPage = pagina;
@@ -102,22 +103,33 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> {
     }
   }
 
+
   
   Future<void> _eliminarGasto(String uuid) async {
-    try {
-      await LocalDatabase.eliminarGasto(uuid);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gasto eliminado exitosamente')),
-      );
-      await _cargarGastos(); // Recargar desde el inicio
-    } catch (e, stacktrace) {
-      log.severe('Error al eliminar gasto', e, stacktrace);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar gasto: $e')),
-      );
-    }
+  try {
+    // 1. Obtener el gasto antes de eliminarlo (para mostrar descripción)
+    final gastoEliminado = await LocalDatabase.obtenerGastoPorUuid(uuid);
+    final descripcion = gastoEliminado['description'] ?? 'Sin descripción';
+
+    // 2. Eliminar el gasto
+    await LocalDatabase.eliminarGasto(uuid);
+
+    // 3. Actualizar el conteo TOTAL y la lista
+    await _cargarTotalGastos(); // Actualiza _totalGastos
+    await _cargarGastosPagina(_currentPage); // Recarga la página actual
+
+    // 4. Mostrar SnackBar con la descripción eliminada
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Gasto eliminado: "$descripcion"')),
+    );
+  } catch (e, stacktrace) {
+    log.severe('Error al eliminar gasto', e, stacktrace);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error al eliminar gasto: $e')),
+    );
+  }
   }
 
   Widget _buildPaginationControls() {
@@ -376,7 +388,7 @@ Widget build(BuildContext context) {
                               columnSpacing: 0,
                               horizontalMargin: 0,
                               columns: [
-                                DataColumn(label: _buildHeaderCell('ID', width: idWidth)),
+                                DataColumn(label: _buildHeaderCell('IDc', width: idWidth)),
                                 DataColumn(label: _buildHeaderCell('Categoría', width: categoriaWidth)),
                                 DataColumn(label: _buildHeaderCell('Descripción', width: descripcionWidth)),
                                 DataColumn(label: _buildHeaderCell('Monto', width: montoWidth)),
@@ -385,11 +397,13 @@ Widget build(BuildContext context) {
                                 DataColumn(label: _buildHeaderCell('Fecha', width: fechaWidth)),
                                 DataColumn(label: _buildHeaderCell('Sincronizado', width: sincronizadoWidth)),
                               ],
-                              rows: _gastos.map((gasto) {
+                              rows: List<DataRow>.generate(_gastos.length, (index) {
+                                final gasto = _gastos[index];
+                                final idc = (_totalGastos - (_currentPage * _pageSize + index));
                                 return DataRow(
                                   cells: [
                                     DataCell(
-                                      _buildDataCell(gasto['id'], width: idWidth),
+                                      _buildDataCell(idc.toString(), width: idWidth),
                                       onLongPress: () => _mostrarDialogoOpciones(gasto),
                                     ),
                                     DataCell(

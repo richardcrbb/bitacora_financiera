@@ -79,11 +79,24 @@ class LocalDatabase {
   }
 
   static Future<void> eliminarGasto(String uuid) async {
-  // Implementación para eliminar el gasto
+  final db = await database;
+  await db.delete(
+    'expenses',
+    where: 'uuid = ?',
+    whereArgs: [uuid],
+  );
   }
 
-static Future<void> actualizarGasto(Map<String, dynamic> gasto) async {
-  // Implementación para actualizar el gasto
+  static Future<int> actualizarGasto(Map<String, dynamic> gasto) async {
+  final db = await database;
+    
+    return await db.update(
+      'expenses', // Nombre de tu tabla
+      gasto,
+      where: 'uuid = ?', // Usamos UUID como identificador único
+      whereArgs: [gasto['uuid']],
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   // Funcion de paginacion
@@ -106,6 +119,16 @@ static Future<int> contarGastos() async {
     await db.rawQuery('SELECT COUNT(*) FROM expenses')
   );
   return count ?? 0;
+}
+
+static Future<Map<String, dynamic>> obtenerGastoPorUuid(String uuid) async {
+  final db = await database;
+  final List<Map<String, dynamic>> result = await db.query(
+    'expenses',
+    where: 'uuid = ?',
+    whereArgs: [uuid],
+  );
+  return result.isNotEmpty ? result.first : {};
 }
 
 

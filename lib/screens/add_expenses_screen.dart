@@ -93,20 +93,30 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
     };
 
     try {
-      if (widget.gastoExistente != null) {
-        await LocalDatabase.actualizarGasto(nuevoGasto);
+      final isUpdate = widget.gastoExistente != null;
+  
+      if (isUpdate) {
+        final rowsAffected = await LocalDatabase.actualizarGasto(nuevoGasto);
+        if (rowsAffected == 0) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('⚠️ No se encontró el gasto a actualizar')),
+          );
+          return;
+        }
       } else {
         await LocalDatabase.insertarGasto(nuevoGasto);
       }
 
       if (!mounted) return;
-
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('✅ Gasto guardado exitosamente')),
       );
 
+
       if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
       } else {
         // Alternativa si no se puede hacer pop
         widget.onGastoGuardado?.call();
