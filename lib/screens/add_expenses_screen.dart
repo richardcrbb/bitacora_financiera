@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+
 final log = Logger('AgregarGastoScreen');
 final uuid = Uuid();
 
@@ -215,7 +216,12 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(DateFormat('yyyy-MM-dd').format(_fechaSeleccionada)),
+                title: Text(
+                  _fechaSeleccionada.year == DateTime.now().year &&
+                  _fechaSeleccionada.month == DateTime.now().month &&
+                  _fechaSeleccionada.day == DateTime.now().day
+                  ? 'Hoy'
+                  :DateFormat('dd-MMM-yyyy').format(_fechaSeleccionada)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: _seleccionarFecha,
               ),

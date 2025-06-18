@@ -199,7 +199,11 @@ class _AgregarGastoPapaScreenState extends State<AgregarGastoPapaScreen> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(_fechaSeleccionada.toLocal().toString().split(' ')[0]),
+                title: Text(_fechaSeleccionada.year == DateTime.now().year &&
+                  _fechaSeleccionada.month == DateTime.now().month &&
+                  _fechaSeleccionada.day == DateTime.now().day
+                  ? 'Hoy'
+                  :DateFormat('dd-MMM-yyyy').format(_fechaSeleccionada)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: _seleccionarFecha,
               ),
