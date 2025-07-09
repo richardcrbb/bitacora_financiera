@@ -1,5 +1,6 @@
 // /screens/overview_screen.dart
 
+import 'package:bitacora_financiera/db/notifiers.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bitacora_financiera/db/local_database.dart';
@@ -25,6 +26,25 @@ class OverviewScreenState extends State<OverviewScreen> {
 
  
   @override
+  void initState() {
+    super.initState();
+    // Escuchar cambios en los notifiers
+    ExpenseNotifiers.overviewNotifier.addListener(_refreshData);
+  }
+
+  @override
+  void dispose() {
+    ExpenseNotifiers.overviewNotifier.removeListener(_refreshData);
+    super.dispose();
+  }
+
+  void _refreshData() {
+    if (mounted) {
+      setState(() {}); // Esto hará que los FutureBuilder se reconstruyan
+    }
+  }
+  
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -46,68 +66,79 @@ class OverviewScreenState extends State<OverviewScreen> {
   
 
   Widget _buildPieChartSection() {
-    return FutureBuilder<Map<String, double>>(
-      future: obtenerGastosPorCategoria(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        
-        if (snapshot.hasError) {
-          return Center(child: Text("Error: ${snapshot.error}"));
-        }
-        
-        final datos = snapshot.data;
-        if (datos == null || datos.isEmpty) {
-          return const SizedBox.shrink(); // No mostrar nada si no hay datos
-        }
-        
-        return Padding(
-          padding: const EdgeInsets.all(0),
-          child: construirGraficoCircular(datos, context),
-        );
+    return ValueListenableBuilder<bool>(
+          valueListenable: ExpenseNotifiers.overviewNotifier,
+          builder: (BuildContext context, _, child) {
+            return FutureBuilder<Map<String, double>>(
+              future: obtenerGastosPorCategoria(),
+              builder: (context, snapshot) {
+                
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                
+                if (snapshot.hasError) {
+                  return Center(child: Text("Error: ${snapshot.error}"));
+                }
+                
+                final datos = snapshot.data;
+                if (datos == null || datos.isEmpty) {
+                  return const SizedBox.shrink(); // No mostrar nada si no hay datos
+                }
+                
+                return Padding(
+                  padding: const EdgeInsets.all(0),
+                  child: construirGraficoCircular(datos, context),
+                );
+              },
+            );
       },
     );
   }
 
   Widget _buildBarChartSection() {
-  return FutureBuilder<Map<String, double>>(
-    future: obtenerGastosUltimos12Meses(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      
-      if (snapshot.hasError) {
-        return Center(child: Text("Error: ${snapshot.error}"));
-      }
-      
-      final datos = snapshot.data;
-      if (datos == null || datos.isEmpty) {
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(20),
-            child: Text(
-              "No hay gastos para graficar",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+  return ValueListenableBuilder<bool>(
+    valueListenable: ExpenseNotifiers.overviewNotifier,
+    builder: (context,_,child) {
+      return  FutureBuilder<Map<String, double>>(
+        future: obtenerGastosUltimos12Meses(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+          
+          final datos = snapshot.data;
+          if (datos == null || datos.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  "No hay gastos para graficar",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-              textAlign: TextAlign.center,
+            );
+          }
+          
+          return Padding(
+            padding: const EdgeInsets.all(0),
+            child: Column(
+              children: [
+                const Text("Gastos mensuales últimos 12 meses", 
+                  style: TextStyle(fontSize: 18)),
+                construirGraficoBarras(datos),
+              ],
             ),
-          ),
-        );
-      }
-      
-      return Padding(
-        padding: const EdgeInsets.all(0),
-        child: Column(
-          children: [
-            const Text("Gastos mensuales últimos 12 meses", 
-              style: TextStyle(fontSize: 18)),
-            construirGraficoBarras(datos),
-          ],
-        ),
+          );
+        },
       );
     },
   );

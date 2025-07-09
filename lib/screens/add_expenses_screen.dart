@@ -1,3 +1,4 @@
+import 'package:bitacora_financiera/db/notifiers.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../db/local_database.dart';
@@ -107,6 +108,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
         }
       } else {
         await LocalDatabase.insertarGasto(nuevoGasto);
+         ExpenseNotifiers.refreshAll();
       }
 
       if (!mounted) return;
