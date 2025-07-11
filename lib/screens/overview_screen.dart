@@ -4,7 +4,6 @@ import 'package:bitacora_financiera/db/notifiers.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bitacora_financiera/db/local_database.dart';
-import 'package:bitacora_financiera/db/papa_local_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
@@ -157,14 +156,6 @@ class OverviewScreenState extends State<OverviewScreen> {
             label: Text(_sincronizando ? "Sincronizando..." : "Sincronizar con Supabase"),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(0),
-          child: ElevatedButton.icon(
-            onPressed: _sincronizando ? null : _sincronizarConSupabasePapa,
-            icon: const Icon(Icons.sync_alt),
-            label: Text(_sincronizando ? "Sincronizando..." : "Sincronizar cuenta_papa"),
-          ),
-        ),
       ],
     );
   }
@@ -283,107 +274,6 @@ setState(() => _sincronizando = true);
     });
   }
 }
-
-
-
-// funcion de sincronizacion papa
-
-Future<void> _sincronizarConSupabasePapa() async {
-
-   setState(() => _sincronizando = true);
-
-  try {
-
-     //inicializa supabase
-     await _inicializarSupabaseSiEsNecesario();
-
-    //Lista que almacena los datos no sincronizados por orden de id.
-    final gastosLocales = List.from(await PapaLocalDatabase.instance.obtenerGastosNoSincronizados())
-      ..sort((a, b) => a['id'].compareTo(b['id']));
-
-    //Mensaje que avisa si no hay datos para sincronizar
-    if (gastosLocales.isEmpty) {
-      throw Exception("No hay gastos de cuenta_papa para sincronizar");
-    }
-
-    //Lista de datos ya organizados listos para sincronizar.
-    final List<Map<String, dynamic>> datosParaUpsert = [];
-
-    //for loop para organizar y verificar tipo de datos correctos.
-    for (var gasto in gastosLocales) {
-      final uuid = gasto['uuid'];
-      if (uuid == null) continue;
-
-      // Asegura que 'monto' sea numero tipo <double>
-      if (gasto['monto'] is String) {
-        gasto['monto'] = double.tryParse(gasto['monto']) ?? 0.0;
-      }
-
-      // Formato de fecha seguro<AAAA-MM-DD>
-      String fechaFormateada;
-      try {
-        fechaFormateada = DateTime.parse(gasto['fecha']).toIso8601String().split('T').first;
-      } catch (_) {
-        fechaFormateada = DateTime.now().toIso8601String().split('T').first;
-      }
-
-      //añade los valores de este gasto a la Lista de datos para upsert ya corregidos o formateados y chequeados.
-      datosParaUpsert.add({
-        'uuid': uuid,
-        'categoria': gasto['categoria'],
-        'descripcion': gasto['descripcion'],
-        'tipo': gasto['tipo'],
-        'monto': gasto['monto'],
-        'saldo': gasto['saldo'],
-        'fecha': fechaFormateada,
-        'generado': gasto['generado'],
-      });
-    }
-
-    //Verifica que la Lista no este vacia, funcion que sincroniza con supabase los gastos de la Lista
-    if (datosParaUpsert.isNotEmpty) {
-      final response = await Supabase.instance.client
-          .from('cuenta_papa') 
-          .upsert(datosParaUpsert, onConflict: 'uuid')
-          .select();
-
-      for (var gasto in gastosLocales) {
-        await PapaLocalDatabase.instance.marcarGastoComoSincronizado(gasto['uuid']);
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("✅ ${response.length} gasto(s) de cuenta_papa sincronizado(s)"),
-          ),
-        );
-      }
-    }
-  } on PostgrestException catch (e) {
-    debugPrint('❌ Error Supabase cuenta_papa: (${e.code}) : (${e.message})');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error Supabase: ${ e.details ?? e.message}")),
-      );
-    }
-  } catch (e, stackTrace) {
-    debugPrint('⚠️ Error cuenta_papa: $e');
-    debugPrint('🪵 StackTrace: $stackTrace');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("⚠️ Error al sincronizar cuenta_papa: $e")),
-      );
-    }
-  } finally {
-    setState(() {
-      _sincronizando = false;
-    });
-  }
-}
-
-
-
-
 
 }
 

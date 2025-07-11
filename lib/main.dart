@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/overview_screen.dart';
 import 'screens/add_expenses_screen.dart';
-import 'screens/cuenta_papa_screen.dart';
-import 'screens/cuenta_papa_list_screen.dart';
 import 'screens/expenses_list_screen.dart';
 
 
@@ -57,9 +55,6 @@ class HomeScreenState extends State<HomeScreen> {
         const OverviewScreen(),
         const AgregarGastoScreen(),
         const ExpensesListScreen(),
-        const AgregarGastoPapaScreen(),
-        const CuentaPapaListScreen(),
-        
       ];
 
   void _onItemTapped(int index) {
