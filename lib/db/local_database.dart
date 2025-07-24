@@ -2,6 +2,10 @@
 
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart'; // <-- Añade esto
+//import 'package:permission_handler/permission_handler.dart';
+//import 'package:share_plus/share_plus.dart';
 
 class LocalDatabase {
   static Database? _database;
@@ -24,18 +28,18 @@ class LocalDatabase {
     await db.execute('''
       CREATE TABLE expenses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category TEXT CHECK(category IN (
-          'Food', 'Transport', 'Entertainment', 'Housing', 'Utilities',
-          'Healthcare', 'Education', 'Insurance', 'Shopping', 'Personal Care',
-          'Travel', 'Dining Out', 'Gifts', 'Savings', 'Investments', 'Miscellaneous'
+        categoria TEXT CHECK(categoria IN (
+         'Alimentación', 'Suplementación', 'Manutención', 'Cuidado Personal', 'Transporte', 'Viajes', 
+         'Nómina', 'Entretenimiento', 'Educación', 
+         'Seguros', 'Compras', 'Restaurantes', 'Regalos', 'Imprevistos'
         )),
-        description TEXT,
-        amount REAL,
-        currency TEXT CHECK(currency IN ('COP', 'USD', 'EUR')) DEFAULT 'COP',
-        payment_method TEXT CHECK(payment_method IN (
-          'Efectivo', 'Nequi', 'Tarjeta de Credito', 'Bancolombia', 'Falabella'
+        descripcion TEXT,
+        monto REAL,
+        divisa TEXT CHECK(divisa IN ('COP', 'USD', 'EUR', 'AED')) DEFAULT 'AED',
+        metodo_pago TEXT CHECK(metodo_pago IN (
+          'Efectivo', 'Tarjeta Debito'
         )),
-        date TEXT,
+        fecha TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         uuid TEXT UNIQUE,
         sincronizado INTEGER DEFAULT 0
@@ -130,6 +134,38 @@ static Future<Map<String, dynamic>> obtenerGastoPorUuid(String uuid) async {
   );
   return result.isNotEmpty ? result.first : {};
 }
+
+static Future<String> exportRawDatabase() async {
+  final dbPath = await getDatabasesPath();
+  final sourceFile = File('$dbPath/bitacora_financiera.db');
+  
+  // Verificar si el archivo existe
+  if (!await sourceFile.exists()) {
+    throw Exception('Archivo de base de datos no encontrado');
+  }
+
+  // Obtener directorio de descargas (funciona en Android/iOS)
+  final directory = Platform.isAndroid
+      ? Directory('/storage/emulated/0/Download') // Ruta estándar Android
+      : await getApplicationDocumentsDirectory(); // iOS usa Documents
+
+  if (!await directory.exists()) {
+    await directory.create(recursive: true);
+  }
+
+  // Crear archivo destino
+  final exportFile = File('${directory.path}/bitacora_financiera_${DateTime.now().millisecondsSinceEpoch}.db');
+  
+  // Copiar el archivo
+  await sourceFile.copy(exportFile.path);
+
+  return exportFile.path;
+  }
+
+ static Future<void> reiniciarBaseDeDatos() async {
+  _database = null; // Limpiar instancia
+  await database; // Volver a cargar
+  }
 
 
   

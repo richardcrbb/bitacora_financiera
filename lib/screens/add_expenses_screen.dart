@@ -23,10 +23,10 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
   final _formKey = GlobalKey<FormState>();
   final _montoController = TextEditingController();
   final _descripcionController = TextEditingController();
-  String _categoriaSeleccionada = 'Food';
-  String _monedaSeleccionada = 'COP';
-  String _metodoPagoSeleccionado = 'Nequi';
+  String _categoriaSeleccionada = 'Alimentación';
+  String _metodoPagoSeleccionado = 'Efectivo';
   DateTime _fechaSeleccionada = DateTime.now();
+  String _monedaSeleccionada = 'AED';
 
   final _montoFormatter = NumberTextInputFormatter(
     decimalDigits: 2,
@@ -62,11 +62,11 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
     if (widget.gastoExistente != null) {
       final gasto = widget.gastoExistente!;
       _montoController.text = NumberFormat('#,##0.00').format(gasto['amount']);
-      _descripcionController.text = gasto['description'];
-      _categoriaSeleccionada = gasto['category'];
-      _monedaSeleccionada = gasto['currency'];
-      _metodoPagoSeleccionado = gasto['payment_method'];
-      _fechaSeleccionada = DateTime.parse(gasto['date']);
+      _descripcionController.text = gasto['descripcion'];
+      _categoriaSeleccionada = gasto['categoria'];
+      _monedaSeleccionada = gasto['divisa'];
+      _metodoPagoSeleccionado = gasto['metodo_pago'];
+      _fechaSeleccionada = DateTime.parse(gasto['fecha']);
     }
   }
 
@@ -85,12 +85,12 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
     final descripcion = _descripcionController.text;
     final nuevoGasto = {
       'uuid': widget.gastoExistente?['uuid'] ?? uuid.v4(),
-      'amount': monto,
-      'description': descripcion,
-      'category': _categoriaSeleccionada,
-      'currency': _monedaSeleccionada,
-      'payment_method': _metodoPagoSeleccionado,
-      'date': _fechaSeleccionada.toIso8601String(),
+      'monto': monto,
+      'descripcion': descripcion,
+      'categoria': _categoriaSeleccionada,
+      'divisa': _monedaSeleccionada,
+      'metodo_pago': _metodoPagoSeleccionado,
+      'fecha': _fechaSeleccionada.toIso8601String(),
       'created_at': widget.gastoExistente?['created_at'] ?? DateTime.now().toIso8601String(),
     };
 
@@ -172,10 +172,9 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
                 value: _categoriaSeleccionada,
                 decoration: const InputDecoration(labelText: 'Categoría'),
                 items: [
-                  'Food', 'Transport', 'Entertainment', 'Housing', 'Utilities',
-                  'Healthcare', 'Education', 'Insurance', 'Shopping',
-                  'Personal Care', 'Travel', 'Dining Out', 'Gifts',
-                  'Savings', 'Investments', 'Miscellaneous',
+                  'Alimentación', 'Suplementación', 'Manutención', 'Cuidado Personal', 'Transporte', 'Viajes', 
+                  'Nómina', 'Entretenimiento', 'Educación', 
+                  'Seguros', 'Compras', 'Restaurantes', 'Regalos', 'Imprevistos',
                 ].map((categoria) {
                   return DropdownMenuItem(value: categoria, child: Text(categoria));
                 }).toList(),
@@ -188,23 +187,9 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
                 },
               ),
               DropdownButtonFormField<String>(
-                value: _monedaSeleccionada,
-                decoration: const InputDecoration(labelText: 'Moneda'),
-                items: ['COP', 'USD', 'EUR'].map((moneda) {
-                  return DropdownMenuItem(value: moneda, child: Text(moneda));
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _monedaSeleccionada = value;
-                    });
-                  }
-                },
-              ),
-              DropdownButtonFormField<String>(
                 value: _metodoPagoSeleccionado,
                 decoration: const InputDecoration(labelText: 'Método de Pago'),
-                items: ['Efectivo', 'Nequi', 'Tarjeta de Credito', 'Bancolombia', 'Falabella']
+                items: ['Efectivo', 'Tarjeta Debito',]
                     .map((metodoPago) {
                   return DropdownMenuItem(value: metodoPago, child: Text(metodoPago));
                 }).toList(),
@@ -212,6 +197,20 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
                   if (value != null) {
                     setState(() {
                       _metodoPagoSeleccionado = value;
+                    });
+                  }
+                },
+              ),
+              DropdownButtonFormField<String>(
+                value: _monedaSeleccionada,
+                decoration: const InputDecoration(labelText: 'Moneda'),
+                items: ['COP', 'AED', 'EUR', 'USD'].map((moneda) {
+                  return DropdownMenuItem(value: moneda, child: Text(moneda));
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _monedaSeleccionada = value;
                     });
                   }
                 },

@@ -1,8 +1,12 @@
 // /screens/overview_screen.dart
 
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';  
 import 'package:bitacora_financiera/db/notifiers.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bitacora_financiera/db/local_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -84,7 +88,16 @@ class OverviewScreenState extends State<OverviewScreen> {
                 
                 final datos = snapshot.data;
                 if (datos == null || datos.isEmpty) {
-                  return const SizedBox.shrink(); // No mostrar nada si no hay datos
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text(
+                        "No hay gastos registrados este mes para mostrar en el gráfico",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ); // No mostrar nada si no hay datos
                 }
                 
                 return Padding(
@@ -146,136 +159,174 @@ class OverviewScreenState extends State<OverviewScreen> {
 }
 
   Widget _buildSyncButtons() {
-    return Column(
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(0),
-          child: ElevatedButton.icon(
-            onPressed: _sincronizando ? null : _sincronizarConSupabase,
-            icon: const Icon(Icons.sync),
-            label: Text(_sincronizando ? "Sincronizando..." : "Sincronizar con Supabase"),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.save_alt),
+          label: Text(_sincronizando ? 'Exportando...' : 'Exportar Base de Datos'),
+          onPressed: _sincronizando ? null : () async {
+            final path = await _exportarDatabase();
+            if (path != null) await _abrirArchivo(path);
+          },
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+          ),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.upload_file),
+          label: Text(_sincronizando ? 'Importando...' : 'Importar Base de Datos'),
+          onPressed: _sincronizando ? null : _importarDatabase,
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
           ),
         ),
       ],
-    );
-  }
-  
-
- // Inicializa Supabase
-
-Future<void> _inicializarSupabaseSiEsNecesario() async {
-  try {
-    // Verifica si ya está inicializado
-    Supabase.instance.client;
-  } catch (_) {
-    // Si no está inicializado, lo inicializa
-    await Supabase.initialize(
-      url: 'http://192.168.0.10:8000',
-      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE3MTU1NTAwMDAsImV4cCI6MTk5OTk5OTk5OX0.kavy1ZGC7jBFNGO5IXZ62mWp3BvQVWuxZzLKpaQgBF0',
-    );
-  }
+    ),
+  );
 }
-
-
-// funcion de sincronizacion mia
-
-
-Future<void> _sincronizarConSupabase() async {
   
- 
-setState(() => _sincronizando = true);
- 
-
-  try {
-
-    //inicializa supabase
-    await _inicializarSupabaseSiEsNecesario();
 
 
-    //Lista que almacena los datos no sincronizados por orden de id.
-    final gastosLocales = List.from(await LocalDatabase.obtenerGastosNoSincronizados())
-     ..sort((a, b) => a['id'].compareTo(b['id']));
 
+// funcion de exportacion .db
+  Future<String?> _exportarDatabase() async {
+    setState(() => _sincronizando = true);
     
-    //Mensaje que avisa si no hay datos para sincronizar
-    if (gastosLocales.isEmpty) {
-      throw Exception("No hay gastos locales para sincronizar");
+    try {
+      // Verificar permisos en Android
+      if (Platform.isAndroid) {
+        final status = await Permission.manageExternalStorage.request();
+        if (!status.isGranted) return null;
+      }
+
+      final db = await LocalDatabase.database;
+      final sourceFile = File(db.path);
+      
+      Directory targetDir;
+      if (Platform.isAndroid) {
+        targetDir = Directory('/storage/emulated/0/Download');
+        if (!await targetDir.exists()) {
+          targetDir = (await getExternalStorageDirectory())!;
+        }
+      } else {
+        targetDir = await getApplicationDocumentsDirectory();
+      }
+
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final exportFile = File('${targetDir.path}/bitacora_$timestamp.db');
+      await sourceFile.copy(exportFile.path);
+      
+      return exportFile.path;
+    } catch (e) {
+      debugPrint('Error al exportar: $e');
+      return null;
+    } finally {
+      setState(() => _sincronizando = false);
     }
+  }
 
-    //Lista de datos ya organizados listos para sincronizar.
-    final List<Map<String, dynamic>> datosParaUpsert = [];
+  Future<void> _abrirArchivo(String filePath) async {
+    try {
 
-    //for loop para organizar y verificar tipo de datos correctos.
-    for (var gasto in gastosLocales) {
-      final uuid = gasto['uuid'];
-      if (uuid == null) continue;
+      
 
-      // Asegura que 'amount' sea numero tipo <double>
-      if (gasto['amount'] is String) {
-        gasto['amount'] = double.tryParse(gasto['amount']) ?? 0.0;
+      final params = ShareParams(     
+        files:[XFile(filePath, mimeType: 'application/x-sqlite3')],
+        subject: 'Backup Bitácora Financiera',
+        text: 'Copia de seguridad ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
+      );
+      
+      final result = await SharePlus.instance.share(params);
+
+      if (result.status == ShareResultStatus.success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Archivo compartido'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
-
-      // Formato de fecha seguro<AAAA-MM-DD>
-      String fechaFormateada;
-      try {
-        fechaFormateada = DateTime.parse(gasto['date']).toIso8601String().split('T').first;
-      } catch (_) {
-        fechaFormateada = DateTime.now().toIso8601String().split('T').first;
-      }
-
-      //añade los valores de este gasto a la Lista de datos para upsert ya corregidos o formateados y chequeados.
-      datosParaUpsert.add({
-        'uuid': uuid,
-        'category': gasto['category'],
-        'description': gasto['description'],
-        'amount': gasto['amount'],
-        'currency': gasto['currency'],
-        'payment_method': gasto['payment_method'],
-        'date': fechaFormateada,
-      });
-    }
-
-    //Verifica que la Lista no este vacia, funcion que sincroniza con supabase los gastos de la Lista
-    if (datosParaUpsert.isNotEmpty) {
-      final response = await Supabase.instance.client
-          .from('expenses')
-          .upsert(datosParaUpsert, onConflict: 'uuid')
-          .select();
-
-      for (var gasto in gastosLocales) {
-        await LocalDatabase.marcarGastoComoSincronizado(gasto['uuid']);
-      }
-
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("✅ ${response.length} gasto(s) sincronizado(s) correctamente"),
+            content: Text('❌ Error: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     }
-  } on PostgrestException catch (e) {
-    debugPrint('❌ Error de Supabase: ${e.code}:  ${e.message}');
+  }
+
+
+
+// Agrega este nuevo método para importar la base de datos
+
+
+
+Future<void> _importarDatabase() async {
+  setState(() => _sincronizando = true);
+
+  try {
+    // Solicitar permisos en Android
+    if (Platform.isAndroid) {
+      final permiso = await Permission.storage.request();
+      if (!mounted) return;
+      if (!permiso.isGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Permiso de almacenamiento denegado')),
+        );
+        return;
+      }
+    }
+
+    // Elegir archivo .db
+    final resultado = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+    );
+
+    if (resultado == null || resultado.files.single.path == null) {
+      return; // Cancelado por el usuario
+    }
+
+    final archivoSeleccionado = File(resultado.files.single.path!);
+
+    // Obtener el path de la base de datos de la app
+    final baseDatos = await LocalDatabase.database;
+    final pathDestino = baseDatos.path;
+
+    // Cerrar la base de datos antes de sobrescribirla
+    await baseDatos.close();
+
+    // Reemplazar la base de datos
+    await archivoSeleccionado.copy(pathDestino);
+
+    // Volver a abrir la base de datos
+    await LocalDatabase.reiniciarBaseDeDatos();
+
+    // Notificar a los listeners que deben actualizarse
+    ExpenseNotifiers.overviewNotifier.value = !ExpenseNotifiers.overviewNotifier.value;
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error Supabase: ${ e.details ?? e.message}")),
+        const SnackBar(content: Text('✅ Base de datos importada con éxito')),
       );
     }
   } catch (e) {
-    debugPrint('⚠️ Error desconocido: $e');
+    debugPrint('Error al importar la base de datos: $e');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("⚠️ Error al sincronizar: $e")),
+        SnackBar(content: Text('❌ Error al importar: $e')),
       );
     }
   } finally {
-    setState(() {
-      _sincronizando = false;
-    });
+    setState(() => _sincronizando = false);
   }
 }
 
-}
 
 
 
@@ -294,10 +345,10 @@ Future<Map<String, double>> obtenerGastosPorCategoria() async {
   final Map<String, double> mapa = {};
 
   for (var gasto in gastos) {
-    final fechaGasto = DateTime.parse(gasto['date']);
+    final fechaGasto = DateTime.parse(gasto['fecha']);
     if (fechaGasto.isAfter(firstDayOfMonth)) {
-      final categoria = gasto['category'] as String;
-      final monto = gasto['amount'] as double;
+      final categoria = gasto['categoria'] as String;
+      final monto = gasto['monto'] as double;
       mapa[categoria] = (mapa[categoria] ?? 0) + monto;
     }
   }
@@ -322,12 +373,12 @@ Future<Map<String, double>> obtenerGastosUltimos12Meses() async {
 
   // Procesar gastos
   for (var gasto in gastos) {
-    final fecha = DateTime.parse(gasto['date']);
+    final fecha = DateTime.parse(gasto['fecha']);
     final key = DateFormat('yyyy-MM').format(DateTime(fecha.year, fecha.month));
     
     // Solo sumar si el mes está en nuestros últimos 12 meses
     if (gastosMensuales.containsKey(key)) {
-      gastosMensuales[key] = gastosMensuales[key]! + (gasto['amount'] as double);
+      gastosMensuales[key] = gastosMensuales[key]! + (gasto['monto'] as double);
     }
   }
 
@@ -425,12 +476,13 @@ Widget construirGraficoCircular(Map<String, double> datos, BuildContext context)
                               sectionMargin = 2;
                             });
                           }
-                        } else if (event is FlLongPressEnd || event is FlPanEndEvent) {
+                          if (event is FlLongPressEnd || event is FlPanEndEvent) {
                           setState(() {
                             showTooltip = false;
                             sectionMargin = 2;
                           });
-                        }
+                          }
+                          }
                       },
                       enabled: true,
                       longPressDuration: const Duration(milliseconds: 100),
@@ -477,7 +529,7 @@ Widget construirGraficoCircular(Map<String, double> datos, BuildContext context)
             style: const TextStyle(fontSize: 18),
           ),
           Text(
-            NumberFormat.currency(locale: 'es_CO', symbol: 'COP', decimalDigits: 0).format(total),
+            NumberFormat.currency(locale: 'en_AE', symbol: 'AED ', decimalDigits: 0).format(total),
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
         ],
@@ -639,4 +691,5 @@ Widget construirGraficoBarras(Map<String, double> datos) {
       ),
     ),
   );
+}
 }

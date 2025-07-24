@@ -1,5 +1,6 @@
 // main.dart
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/overview_screen.dart';
@@ -13,7 +14,9 @@ Future<void> main() async {
   // Inicializa los datos de localización para español colombiano
   await initializeDateFormatting('es', null);
 
-  
+   if (!Platform.isAndroid && !Platform.isIOS) {
+    debugPrint('FilePicker not supported on this platform');
+  }
   
   runApp(MyApp());
 }
@@ -88,15 +91,6 @@ class HomeScreenState extends State<HomeScreen> {
               icon: Icon(Icons.list), 
               label: 'Mis Gastos'
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add),
-            label: 'Cuenta Papá',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: 'Lista Gastos Papá',
-          ),
-
         ],
       ),
     );

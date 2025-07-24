@@ -407,27 +407,27 @@ Widget build(BuildContext context) {
                                       onLongPress: () => _mostrarDialogoOpciones(gasto),
                                     ),
                                     DataCell(
-                                      _buildDataCell(gasto['category'], width: categoriaWidth),
+                                      _buildDataCell(gasto['categoria'], width: categoriaWidth),
                                       onLongPress: () => _mostrarDialogoOpciones(gasto),
                                     ),
                                     DataCell(
-                                      _buildDataCell(gasto['description'], width: descripcionWidth),
+                                      _buildDataCell(gasto['descripcion'], width: descripcionWidth),
                                       onLongPress: () => _mostrarDialogoOpciones(gasto),
                                     ),
                                     DataCell(
-                                      _buildDataCell(gasto['amount'], isAmount: true, width: montoWidth),
+                                      _buildDataCell(gasto['monto'], isAmount: true, width: montoWidth),
                                       onLongPress: () => _mostrarDialogoOpciones(gasto),
                                     ),
                                     DataCell(
-                                      _buildDataCell(gasto['currency'], width: monedaWidth),
+                                      _buildDataCell(gasto['divisa'], width: monedaWidth),
                                       onLongPress: () => _mostrarDialogoOpciones(gasto),
                                     ),
                                     DataCell(
-                                      _buildDataCell(gasto['payment_method'], width: metododepagoWidth),
+                                      _buildDataCell(gasto['metodo_pago'], width: metododepagoWidth),
                                       onLongPress: () => _mostrarDialogoOpciones(gasto),
                                     ),
                                     DataCell(
-                                      _buildDataCell(gasto['date'], isDate: true, width: fechaWidth),
+                                      _buildDataCell(gasto['fecha'], isDate: true, width: fechaWidth),
                                       onLongPress: () => _mostrarDialogoOpciones(gasto),
                                     ),
                                     DataCell(
