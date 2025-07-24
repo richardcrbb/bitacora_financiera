@@ -25,7 +25,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
   final _descripcionController = TextEditingController();
   String _categoriaSeleccionada = 'Food';
   String _monedaSeleccionada = 'COP';
-  String _metodoPagoSeleccionado = 'Nequi';
+  String _metodoPagoSeleccionado = 'Efectivo';
   DateTime _fechaSeleccionada = DateTime.now();
 
   final _montoFormatter = NumberTextInputFormatter(
@@ -145,6 +145,18 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  _fechaSeleccionada.year == DateTime.now().year &&
+                  _fechaSeleccionada.month == DateTime.now().month &&
+                  _fechaSeleccionada.day == DateTime.now().day
+                  ? 'Hoy'
+                  :DateFormat('dd-MMM-yyyy').format(_fechaSeleccionada)),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: _seleccionarFecha,
+              ),
+              Divider(height: 1, color: Colors.grey),
               TextFormField(
                 controller: _montoController,
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
@@ -187,20 +199,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
                   }
                 },
               ),
-              DropdownButtonFormField<String>(
-                value: _monedaSeleccionada,
-                decoration: const InputDecoration(labelText: 'Moneda'),
-                items: ['COP', 'USD', 'EUR'].map((moneda) {
-                  return DropdownMenuItem(value: moneda, child: Text(moneda));
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _monedaSeleccionada = value;
-                    });
-                  }
-                },
-              ),
+              
               DropdownButtonFormField<String>(
                 value: _metodoPagoSeleccionado,
                 decoration: const InputDecoration(labelText: 'Método de Pago'),
@@ -216,16 +215,19 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
                   }
                 },
               ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  _fechaSeleccionada.year == DateTime.now().year &&
-                  _fechaSeleccionada.month == DateTime.now().month &&
-                  _fechaSeleccionada.day == DateTime.now().day
-                  ? 'Hoy'
-                  :DateFormat('dd-MMM-yyyy').format(_fechaSeleccionada)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: _seleccionarFecha,
+              DropdownButtonFormField<String>(
+                value: _monedaSeleccionada,
+                decoration: const InputDecoration(labelText: 'Moneda'),
+                items: ['COP', 'USD', 'EUR'].map((moneda) {
+                  return DropdownMenuItem(value: moneda, child: Text(moneda));
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _monedaSeleccionada = value;
+                    });
+                  }
+                },
               ),
               const SizedBox(height: 20),
               ElevatedButton(
