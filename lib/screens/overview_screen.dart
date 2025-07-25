@@ -549,7 +549,7 @@ Widget construirGraficoCircular(Map<String, double> datos, BuildContext context)
                     sectionsSpace: sectionMargin,
                     startDegreeOffset: 180,
                   ),
-                  swapAnimationDuration: Duration(milliseconds: 100),
+                  duration: Duration(milliseconds: 100),
                 ),
                 if (showTooltip)
                   AnimatedPositioned(
