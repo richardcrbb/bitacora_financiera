@@ -11,34 +11,51 @@ class CuentaPapaListScreen extends StatefulWidget {
 }
 
 class CuentaPapaListScreenState extends State<CuentaPapaListScreen> {
-  late Future<List<Map<String, dynamic>>> _cuentas;
+  
+  late Future<List<Map<String, dynamic>>> _cuentas; //futura referencia a la base de datos.
+  int currentPage = 0;
 
   @override
   void initState() {
     super.initState();
     _refreshData();
+    _setCurrentPage();
   }
-
+//. Funcion para cargar mi base de datos y asignarla en un campo de instancia de esta clase.
   void _refreshData() {
     setState(() {
       _cuentas = _fetchCuentas();
     });
   }
-
+//.Esta funcion obtiene los datos de la db.
   Future<List<Map<String, dynamic>>> _fetchCuentas() async {
     return await PapaLocalDatabase.instance.queryAll();
   }
 
+//.Esta funcion ajusta la currentpage a la ultima.
+  Future<void> _setCurrentPage() async {
+    List<Map<String,dynamic>> cuentas = await PapaLocalDatabase.instance.queryAll();
+    final int itemsPerPage = 20;
+    final int totalPages = (cuentas.length/itemsPerPage).ceil();
+    setState(() {
+      currentPage = totalPages-1;
+    });
+
+  }
+
+  //. foramto en pesos sin decimales.
   String _formatMonto(double monto) {
     final formatter = NumberFormat('#,##0', 'es_CO');
     return formatter.format(monto);
   }
 
+  //. elimina un registro
   Future<void> _deleteCuenta(int id) async {
     await PapaLocalDatabase.instance.delete(id);
     _refreshData();
   }
 
+  //.Funcion para editar un registro en el formulario, envia un callback (setState) y el registro (cuenta).
   void _showEditDialog(Map<String, dynamic> cuenta) {
     Navigator.push(
       context,
@@ -51,6 +68,7 @@ class CuentaPapaListScreenState extends State<CuentaPapaListScreen> {
     );
   }
 
+  //.formato fecha dia y mes
   String _formatDate(String dateString) {
   try {
     // Parsear la fecha (ajusta esto según el formato de tu fecha original)
@@ -63,6 +81,7 @@ class CuentaPapaListScreenState extends State<CuentaPapaListScreen> {
   }
 }
 
+  //.muestra ventana de confirmacion para eliminar, llama a la funcion de eliminar y elimina el registro.
   void _showDeleteConfirmation(int id) {
     showDialog(
       context: context,
@@ -88,6 +107,23 @@ class CuentaPapaListScreenState extends State<CuentaPapaListScreen> {
     );
   }
 
+  //. Funciones de paginacion
+
+  void _paginaAtras(){
+    if(currentPage-1<0){return;}
+    setState(() {
+      currentPage -= 1;
+    });
+  }
+
+  void _paginaAdelante(int totalPages ){
+    if(currentPage+1 >= totalPages){return;}
+    setState(() {
+      currentPage +=1;
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,6 +139,13 @@ class CuentaPapaListScreenState extends State<CuentaPapaListScreen> {
             return const Center(child: Text('No hay registros'));
           } else {
             final cuentas = snapshot.data!;
+            final int itemsPerPage = 20;
+            final int totalPages = (cuentas.length/itemsPerPage).ceil();
+            final int startIndex = currentPage*itemsPerPage;
+            final int endIndex = (currentPage+1)*itemsPerPage;
+            final List<Map<String,dynamic>> sublista = cuentas.sublist(
+              startIndex,endIndex < cuentas.length? endIndex:cuentas.length
+            );
             return Column(
               children: [
                 // Header (sin cambios)
@@ -121,9 +164,9 @@ class CuentaPapaListScreenState extends State<CuentaPapaListScreen> {
                 ),
                 Expanded(
                   child: ListView.builder(
-                    itemCount: cuentas.length,
+                    itemCount: sublista.length,
                     itemBuilder: (context, index) {
-                      final cuenta = cuentas[index];
+                      final cuenta = sublista[index];
                       return GestureDetector(
                         onLongPress: () {
                           showModalBottomSheet(
@@ -200,6 +243,20 @@ class CuentaPapaListScreenState extends State<CuentaPapaListScreen> {
                       );
                     },
                   ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(onPressed: () {
+                      _paginaAtras();
+                    }, icon: Icon(Icons.arrow_back_ios_rounded)),
+                    SizedBox(width: 30,),
+                    Text('Pag.  ${currentPage+1}'),
+                    SizedBox(width: 30,),
+                    IconButton(onPressed: () {
+                      _paginaAdelante(totalPages);
+                    }, icon: Icon(Icons.arrow_forward_ios_rounded))
+                  ],
                 ),
               ],
             );

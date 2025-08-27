@@ -5,20 +5,31 @@ import 'package:path/path.dart'; // Importa path
 
 
 class PapaLocalDatabase {
-  static final PapaLocalDatabase instance = PapaLocalDatabase._init();
-  static Database? _database;
 
+  //.constructor nombrado y tambien privado de esta clase.
   PapaLocalDatabase._init();
+  //.la clase se está “auto-instanciando”, 
+  static final PapaLocalDatabase instance = PapaLocalDatabase._init();
+  //parece “raro” o “contraintuitivo”, pero es exactamente lo que hace el patrón singleton.
+  //ahora puedo acceder a los metodos de esta clase mediante esta instancia {instance} => es un campo //.estático → vive en la clase, no en las instancias.
+  //no necesito crear uns instancia fuera de aqui para poder acceder a estos metodos abajo!
+  
+  
+  static Database? _database; //aqui se almacenara la base de datos cuando se cree, o cuando se acceda al getter de esta clase la primera vez.
 
+  
+
+  //. getter para devolver la conexion unica a la base de datos conexion#1 y no tener varias conexiones en paralelo [threads].
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDB('papa_local_database.db');
     return _database!;
   }
 
-  Future<Database> _initDB(String filePath) async {
+  //. Metodo principal para crear base de datos.
+  Future<Database> _initDB(String nombreDeDb) async {
   final dbPath = await getDatabasesPath();
-  final path = join(dbPath, filePath);
+  final path = join(dbPath, nombreDeDb);
   return await openDatabase(
     path,
     version: 2, // Incrementamos la versión por el cambio de esquema
@@ -31,6 +42,7 @@ class PapaLocalDatabase {
   );
   }
 
+  //. Funcion que crea la base de datos, se usa dentro de _initDB
   Future _createDB(Database db, int version) async {
   await db.execute('''
   CREATE TABLE cuenta_papa (
@@ -128,22 +140,26 @@ class PapaLocalDatabase {
   ''');
   }
 
+  //.insert
   Future<int> insert(Map<String, dynamic> row) async {
     final db = await instance.database;
     return await db.insert('cuenta_papa', row);
   }
 
+  //. toda la db
   Future<List<Map<String, dynamic>>> queryAll() async {
     final db = await instance.database;
     return await db.query('cuenta_papa');
   }
 
+  //.update
   Future<int> update(Map<String, dynamic> row) async {
     final db = await instance.database;
     final id = row['id'];
     return await db.update('cuenta_papa', row, where: 'id = ?', whereArgs: [id]);
   }
 
+  //.saldo
    Future<double?> obtenerSaldo() async {
     final db = await database;
     final List<Map<String, dynamic>> result = await db.query(
@@ -158,12 +174,14 @@ class PapaLocalDatabase {
     return null; // Si no se encuentra saldo
   }
 
+  //. insertar
   // Método para insertar un gasto
   Future<int> insertarGasto(Map<String, dynamic> row) async {
     final db = await database;
     return await db.insert('cuenta_papa', row);
   }
 
+  //. actualizar saldo
   // Método para actualizar el saldo
   Future<void> actualizarSaldo(double nuevoSaldo) async {
     final db = await database;
@@ -173,6 +191,7 @@ class PapaLocalDatabase {
     );
   }
 
+  //. ultimo gasto
   Future<Map<String, dynamic>?> obtenerUltimoGasto() async {
   final db = await database;
   final result = await db.query(
@@ -183,11 +202,13 @@ class PapaLocalDatabase {
   return result.isNotEmpty ? result.first : null;
   }
 
+  //. eliminar todo
   Future<void> borrarTodosLosGastos() async {
     final db = await database;
     await db.delete('cuenta_papa');
   }
 
+  //. gastos no sincronizados
   Future<List<Map<String, dynamic>>> obtenerGastosNoSincronizados() async {
   final db = await database;
   return await db.query(
@@ -197,6 +218,7 @@ class PapaLocalDatabase {
   );
   }
   
+  //.Marcar como sincronizado
   Future<void> marcarGastoComoSincronizado(String uuid) async {
   final db = await database;
   await db.update(
@@ -207,6 +229,7 @@ class PapaLocalDatabase {
   );
   }
 
+  //.actualizar
   Future<int> actualizarGasto(int id, Map<String, dynamic> row) async {
   final db = await database;
   return await db.update(
@@ -217,6 +240,7 @@ class PapaLocalDatabase {
   );
 }
 
+//.delete
 Future<int> delete(int id) async {
   final db = await database;
   return await db.delete(

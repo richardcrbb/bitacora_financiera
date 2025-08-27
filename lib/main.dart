@@ -53,7 +53,7 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  List<Widget> get _screens => [
+   final List<Widget> _screens = [
         const OverviewScreen(),
         const AgregarGastoScreen(),
         const ExpensesListScreen(),

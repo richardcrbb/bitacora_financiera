@@ -8,7 +8,8 @@ class LocalDatabase {
 
   static Future<Database> get database async {
     if (_database != null) return _database!;
-    return await _initDB();
+    _database = await _initDB();
+    return _database!;
   }
 
   static Future<Database> _initDB() async {
