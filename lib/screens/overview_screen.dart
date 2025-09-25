@@ -180,7 +180,7 @@ Future<void> _inicializarSupabaseSiEsNecesario() async {
     // Si no está inicializado, lo inicializa
     await Supabase.initialize(
       url: 'http://192.168.0.10:8000',
-      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE3MTU1NTAwMDAsImV4cCI6MTk5OTk5OTk5OX0.kavy1ZGC7jBFNGO5IXZ62mWp3BvQVWuxZzLKpaQgBF0',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzU3OTEyNDAwLCJleHAiOjE5MTU2Nzg4MDB9.DgcWxNy_0GdnDMVvNQ2zMuKLX5l93cHIZyQaa7aW7qc',
     );
   }
 }
