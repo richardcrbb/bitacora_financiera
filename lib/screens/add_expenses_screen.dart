@@ -24,7 +24,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
   final _montoController = TextEditingController();
   final _descripcionController = TextEditingController();
   String _categoriaSeleccionada = 'Food';
-  String _monedaSeleccionada = 'COP';
+  String _monedaSeleccionada = 'CAD';
   String _metodoPagoSeleccionado = 'Efectivo';
   DateTime _fechaSeleccionada = DateTime.now();
 
@@ -201,7 +201,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
               ),
               
               DropdownButtonFormField<String>(
-                value: _metodoPagoSeleccionado,
+                initialValue: _metodoPagoSeleccionado,
                 decoration: const InputDecoration(labelText: 'Método de Pago'),
                 items: ['Efectivo', 'Nequi', 'Tarjeta de Credito', 'Bancolombia', 'Falabella']
                     .map((metodoPago) {
@@ -218,7 +218,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
               DropdownButtonFormField<String>(
                 value: _monedaSeleccionada,
                 decoration: const InputDecoration(labelText: 'Moneda'),
-                items: ['COP', 'USD', 'EUR'].map((moneda) {
+                items: ['CAD', 'COP', 'USD', 'EUR'].map((moneda) {
                   return DropdownMenuItem(value: moneda, child: Text(moneda));
                 }).toList(),
                 onChanged: (value) {

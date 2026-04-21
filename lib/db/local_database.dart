@@ -32,7 +32,7 @@ class LocalDatabase {
         )),
         description TEXT,
         amount REAL,
-        currency TEXT CHECK(currency IN ('COP', 'USD', 'EUR')) DEFAULT 'COP',
+        currency TEXT CHECK(currency IN ('CAD', 'COP', 'USD', 'EUR')) DEFAULT 'CAD',
         payment_method TEXT CHECK(payment_method IN (
           'Efectivo', 'Nequi', 'Tarjeta de Credito', 'Bancolombia', 'Falabella'
         )),
