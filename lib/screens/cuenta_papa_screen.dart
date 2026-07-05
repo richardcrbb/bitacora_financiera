@@ -165,7 +165,7 @@ class _AgregarGastoPapaScreenState extends State<AgregarGastoPapaScreen> {
                 decoration: const InputDecoration(labelText: 'Descripción'),
               ),
               DropdownButtonFormField<String>(
-                value: _categoriaSeleccionada,
+                initialValue: _categoriaSeleccionada,
                 decoration: const InputDecoration(labelText: 'Categoría'),
                 items: [
                   'Food', 'Transport', 'Entertainment', 'Housing', 'Utilities',
@@ -184,7 +184,7 @@ class _AgregarGastoPapaScreenState extends State<AgregarGastoPapaScreen> {
                 },
               ),
               DropdownButtonFormField<String>(
-                value: _tipoSeleccionado,
+                initialValue: _tipoSeleccionado,
                 decoration: const InputDecoration(labelText: 'Tipo'),
                 items: ['egreso', 'ingreso'].map((tipo) {
                   return DropdownMenuItem(value: tipo, child: Text(tipo));

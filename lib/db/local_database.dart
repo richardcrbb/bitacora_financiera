@@ -25,21 +25,11 @@ class LocalDatabase {
     await db.execute('''
       CREATE TABLE expenses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category TEXT CHECK(category IN (
-          'Food', 'Transport', 'Entertainment', 'Housing', 'Utilities',
-          'Healthcare', 'Education', 'Insurance', 'Shopping', 'Personal Care',
-          'Travel', 'Dining Out', 'Gifts', 'Savings', 'Investments', 'Miscellaneous'
-        )),
+        category TEXT,
         description TEXT,
         amount REAL,
-<<<<<<< HEAD
-        currency TEXT CHECK(currency IN ('CAD', 'COP', 'USD', 'EUR')) DEFAULT 'CAD',
-=======
-        currency TEXT CHECK(currency IN ('CAD', 'COP', 'USD', 'EUR')) DEFAULT 'COP',
->>>>>>> 755a3ea (no se porque, pero no habia quedado los cad)
-        payment_method TEXT CHECK(payment_method IN (
-          'Efectivo', 'Nequi', 'Tarjeta de Credito', 'Bancolombia', 'Falabella'
-        )),
+        currency TEXT,
+        payment_method TEXT,
         date TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         uuid TEXT UNIQUE,

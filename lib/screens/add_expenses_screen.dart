@@ -181,7 +181,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
                 decoration: const InputDecoration(labelText: 'Descripción'),
               ),
               DropdownButtonFormField<String>(
-                value: _categoriaSeleccionada,
+                initialValue: _categoriaSeleccionada,
                 decoration: const InputDecoration(labelText: 'Categoría'),
                 items: [
                   'Food', 'Transport', 'Entertainment', 'Housing', 'Utilities',
@@ -203,7 +203,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
               DropdownButtonFormField<String>(
                 initialValue: _metodoPagoSeleccionado,
                 decoration: const InputDecoration(labelText: 'Método de Pago'),
-                items: ['Efectivo', 'Nequi', 'Tarjeta de Credito', 'Bancolombia', 'Falabella']
+                items: ['Efectivo', 'Scotia Debit', 'Scotia Credit Master', 'e-Transfer', 'Nequi', 'Tarjeta de Credito', 'Bancolombia', 'Falabella']
                     .map((metodoPago) {
                   return DropdownMenuItem(value: metodoPago, child: Text(metodoPago));
                 }).toList(),
@@ -216,7 +216,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
                 },
               ),
               DropdownButtonFormField<String>(
-                value: _monedaSeleccionada,
+                initialValue: _monedaSeleccionada,
                 decoration: const InputDecoration(labelText: 'Moneda'),
                 items: ['CAD', 'COP', 'USD', 'EUR'].map((moneda) {
                   return DropdownMenuItem(value: moneda, child: Text(moneda));

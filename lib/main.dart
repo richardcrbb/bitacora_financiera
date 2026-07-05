@@ -73,6 +73,7 @@ class HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bitácora Financiera'),
+        actions: [IconButton(onPressed: (){}, icon: Icon(Icons.settings_applications))],
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(

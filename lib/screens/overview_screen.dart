@@ -1,10 +1,9 @@
 // /screens/overview_screen.dart
 
+import 'package:bitacora_financiera/db/models.dart';
+import 'package:bitacora_financiera/db/functions.dart';
 import 'package:bitacora_financiera/db/notifiers.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:bitacora_financiera/db/local_database.dart';
-import 'package:bitacora_financiera/db/papa_local_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
@@ -20,11 +19,13 @@ class OverviewScreen extends StatefulWidget {
   OverviewScreenState createState() => OverviewScreenState();
 }
 
-class OverviewScreenState extends State<OverviewScreen> {
-  
-  bool _sincronizando = false;
+class OverviewScreenState extends State<OverviewScreen> with SingleTickerProviderStateMixin{
 
- 
+  
+//!                         SingleTicker Controller
+  late TabController tabIndexController = TabController(length: 4, vsync: this);
+  
+//!                         initState Method  
   @override
   void initState() {
     super.initState();
@@ -32,65 +33,65 @@ class OverviewScreenState extends State<OverviewScreen> {
     ExpenseNotifiers.overviewNotifier.addListener(_refreshData);
   }
 
+//!                         Dispose Method
   @override
   void dispose() {
     ExpenseNotifiers.overviewNotifier.removeListener(_refreshData);
     super.dispose();
   }
 
+//!                         Refresh Method
   void _refreshData() {
     if (mounted) {
       setState(() {}); // Esto hará que los FutureBuilder se reconstruyan
     }
   }
   
+
+//!                         Build Method
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Resumen de Gastos", 
-        style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        ),
-      body: SingleChildScrollView(
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildPieChartSection(),
-            _buildBarChartSection(),
-            _buildSyncButtons(),
-          ],
-        ),
+        children: [
+          Expanded(
+            child: TabBarView(
+              controller: tabIndexController,
+              children:
+                List.generate(4, (tabIndex) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildPieChartSection(tabIndex),
+                      _buildBarChartSection(tabIndex), ],);
+                },) 
+             ),
+          )
+        ],
+        )
       ),
     );
   }
   
+//!                                 Pie Chart ---- Data Integrity Check Method
 
-  Widget _buildPieChartSection() {
+  Widget _buildPieChartSection(int tabIndex) {
     return ValueListenableBuilder<bool>(
           valueListenable: ExpenseNotifiers.overviewNotifier,
-          builder: (BuildContext context, _, child) {
+          builder: (BuildContext context, _, __) {
             return FutureBuilder<Map<String, double>>(
-              future: obtenerGastosPorCategoria(),
+              future: obtenerGastosPorCategoria(tabIndex),
               builder: (context, snapshot) {
                 
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                
-                if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}"));
-                }
-                
-                final datos = snapshot.data;
-                if (datos == null || datos.isEmpty) {
-                  return const SizedBox.shrink(); // No mostrar nada si no hay datos
-                }
+                if (snapshot.connectionState == ConnectionState.waiting) {return const Center(child: CircularProgressIndicator());}
+                if (snapshot.hasError) {return Center(child: Text("Error: ${snapshot.error}"));}
+                if (snapshot.data == null || snapshot.data!.isEmpty) {return const SizedBox(height: 300,child: Center(child: Text('No hay datos registrados todavia.')),);} // No mostrar nada si no hay datos
                 
                 return Padding(
                   padding: const EdgeInsets.all(0),
-                  child: construirGraficoCircular(datos, context),
+                  child: construirGraficoCircular(snapshot.data!, context, tabIndex),
                 );
               },
             );
@@ -98,367 +99,17 @@ class OverviewScreenState extends State<OverviewScreen> {
     );
   }
 
-  Widget _buildBarChartSection() {
-  return ValueListenableBuilder<bool>(
-    valueListenable: ExpenseNotifiers.overviewNotifier,
-    builder: (context,_,child) {
-      return  FutureBuilder<Map<String, double>>(
-        future: obtenerGastosUltimos12Meses(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-          
-          final datos = snapshot.data;
-          if (datos == null || datos.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Text(
-                  "No hay gastos para graficar",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          }
-          
-          return Padding(
-            padding: const EdgeInsets.all(0),
-            child: Column(
-              children: [
-                const Text("Gastos mensuales últimos 12 meses", 
-                  style: TextStyle(fontSize: 18)),
-                construirGraficoBarras(datos),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
-}
+//!                                Grafico Circular Build
 
-  Widget _buildSyncButtons() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(0),
-          child: ElevatedButton.icon(
-            onPressed: _sincronizando ? null : _sincronizarConSupabase,
-            icon: const Icon(Icons.sync),
-            label: Text(_sincronizando ? "Sincronizando..." : "Sincronizar con Supabase"),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(0),
-          child: ElevatedButton.icon(
-            onPressed: _sincronizando ? null : _sincronizarConSupabasePapa,
-            icon: const Icon(Icons.sync_alt),
-            label: Text(_sincronizando ? "Sincronizando..." : "Sincronizar cuenta_papa"),
-          ),
-        ),
-      ],
-    );
-  }
-  
-
- // Inicializa Supabase
-
-Future<void> _inicializarSupabaseSiEsNecesario() async {
-  try {
-    // Verifica si ya está inicializado
-    Supabase.instance.client;
-  } catch (_) {
-    // Si no está inicializado, lo inicializa
-    await Supabase.initialize(
-      url: 'http://192.168.0.10:8000',
-      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzU3OTEyNDAwLCJleHAiOjE5MTU2Nzg4MDB9.DgcWxNy_0GdnDMVvNQ2zMuKLX5l93cHIZyQaa7aW7qc',
-    );
-  }
-}
-
-
-// funcion de sincronizacion mia
-
-
-Future<void> _sincronizarConSupabase() async {
-  
- 
-setState(() => _sincronizando = true);
- 
-
-  try {
-
-    //inicializa supabase
-    await _inicializarSupabaseSiEsNecesario();
-
-
-    //Lista que almacena los datos no sincronizados por orden de id.
-    final gastosLocales = List.from(await LocalDatabase.obtenerGastosNoSincronizados())
-     ..sort((a, b) => a['id'].compareTo(b['id']));
-
-    
-    //Mensaje que avisa si no hay datos para sincronizar
-    if (gastosLocales.isEmpty) {
-      throw Exception("No hay gastos locales para sincronizar");
-    }
-
-    //Lista de datos ya organizados listos para sincronizar.
-    final List<Map<String, dynamic>> datosParaUpsert = [];
-
-    //for loop para organizar y verificar tipo de datos correctos.
-    for (var gasto in gastosLocales) {
-      final uuid = gasto['uuid'];
-      if (uuid == null) continue;
-
-      // Asegura que 'amount' sea numero tipo <double>
-      if (gasto['amount'] is String) {
-        gasto['amount'] = double.tryParse(gasto['amount']) ?? 0.0;
-      }
-
-      // Formato de fecha seguro<AAAA-MM-DD>
-      String fechaFormateada;
-      try {
-        fechaFormateada = DateTime.parse(gasto['date']).toIso8601String().split('T').first;
-      } catch (_) {
-        fechaFormateada = DateTime.now().toIso8601String().split('T').first;
-      }
-
-      //añade los valores de este gasto a la Lista de datos para upsert ya corregidos o formateados y chequeados.
-      datosParaUpsert.add({
-        'uuid': uuid,
-        'category': gasto['category'],
-        'description': gasto['description'],
-        'amount': gasto['amount'],
-        'currency': gasto['currency'],
-        'payment_method': gasto['payment_method'],
-        'date': fechaFormateada,
-      });
-    }
-
-    //Verifica que la Lista no este vacia, funcion que sincroniza con supabase los gastos de la Lista
-    if (datosParaUpsert.isNotEmpty) {
-      final response = await Supabase.instance.client
-          .from('expenses')
-          .upsert(datosParaUpsert, onConflict: 'uuid')
-          .select();
-
-      for (var gasto in gastosLocales) {
-        await LocalDatabase.marcarGastoComoSincronizado(gasto['uuid']);
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("✅ ${response.length} gasto(s) sincronizado(s) correctamente"),
-          ),
-        );
-      }
-    }
-  } on PostgrestException catch (e) {
-    debugPrint('❌ Error de Supabase: ${e.code}:  ${e.message}');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error Supabase: ${ e.details ?? e.message}")),
-      );
-    }
-  } catch (e) {
-    debugPrint('⚠️ Error desconocido: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("⚠️ Error al sincronizar: $e")),
-      );
-    }
-  } finally {
-    setState(() {
-      _sincronizando = false;
-    });
-  }
-}
-
-
-
-// funcion de sincronizacion papa
-
-Future<void> _sincronizarConSupabasePapa() async {
-
-   setState(() => _sincronizando = true);
-
-  try {
-
-     //inicializa supabase
-     await _inicializarSupabaseSiEsNecesario();
-
-    //Lista que almacena los datos no sincronizados por orden de id.
-    final gastosLocales = List.from(await PapaLocalDatabase.instance.obtenerGastosNoSincronizados())
-      ..sort((a, b) => a['id'].compareTo(b['id']));
-
-    //Mensaje que avisa si no hay datos para sincronizar
-    if (gastosLocales.isEmpty) {
-      throw Exception("No hay gastos de cuenta_papa para sincronizar");
-    }
-
-    //Lista de datos ya organizados listos para sincronizar.
-    final List<Map<String, dynamic>> datosParaUpsert = [];
-
-    //for loop para organizar y verificar tipo de datos correctos.
-    for (var gasto in gastosLocales) {
-      final uuid = gasto['uuid'];
-      if (uuid == null) continue;
-
-      // Asegura que 'monto' sea numero tipo <double>
-      if (gasto['monto'] is String) {
-        gasto['monto'] = double.tryParse(gasto['monto']) ?? 0.0;
-      }
-
-      // Formato de fecha seguro<AAAA-MM-DD>
-      String fechaFormateada;
-      try {
-        fechaFormateada = DateTime.parse(gasto['fecha']).toIso8601String().split('T').first;
-      } catch (_) {
-        fechaFormateada = DateTime.now().toIso8601String().split('T').first;
-      }
-
-      //añade los valores de este gasto a la Lista de datos para upsert ya corregidos o formateados y chequeados.
-      datosParaUpsert.add({
-        'uuid': uuid,
-        'categoria': gasto['categoria'],
-        'descripcion': gasto['descripcion'],
-        'tipo': gasto['tipo'],
-        'monto': gasto['monto'],
-        'saldo': gasto['saldo'],
-        'fecha': fechaFormateada,
-        'generado': gasto['generado'],
-      });
-    }
-
-    //Verifica que la Lista no este vacia, funcion que sincroniza con supabase los gastos de la Lista
-    if (datosParaUpsert.isNotEmpty) {
-      final response = await Supabase.instance.client
-          .from('cuenta_papa') 
-          .upsert(datosParaUpsert, onConflict: 'uuid')
-          .select();
-
-      for (var gasto in gastosLocales) {
-        await PapaLocalDatabase.instance.marcarGastoComoSincronizado(gasto['uuid']);
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("✅ ${response.length} gasto(s) de cuenta_papa sincronizado(s)"),
-          ),
-        );
-      }
-    }
-  } on PostgrestException catch (e) {
-    debugPrint('❌ Error Supabase cuenta_papa: (${e.code}) : (${e.message})');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error Supabase: ${ e.details ?? e.message}")),
-      );
-    }
-  } catch (e, stackTrace) {
-    debugPrint('⚠️ Error cuenta_papa: $e');
-    debugPrint('🪵 StackTrace: $stackTrace');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("⚠️ Error al sincronizar cuenta_papa: $e")),
-      );
-    }
-  } finally {
-    setState(() {
-      _sincronizando = false;
-    });
-  }
-}
-
-
-
-
-
-}
-
-
-
-
-
-
-
-//Funcion para obtener los gastos por categoria mensual
-
-// Función para obtener los gastos por categoría del último mes
-Future<Map<String, double>> obtenerGastosPorCategoria() async {
-  final now = DateTime.now();
-  final firstDayOfMonth = DateTime(now.year, now.month, 1);
-  final gastos = await LocalDatabase.obtenerGastos();
-  
-  final Map<String, double> mapa = {};
-
-  for (var gasto in gastos) {
-    final fechaGasto = DateTime.parse(gasto['date']);
-    if (fechaGasto.isAfter(firstDayOfMonth)) {
-      final categoria = gasto['category'] as String;
-      final monto = gasto['amount'] as double;
-      mapa[categoria] = (mapa[categoria] ?? 0) + monto;
-    }
-  }
-
-  return mapa;
-}
-
-
-// funcion para calcular los gastos del ultimo año
-
-Future<Map<String, double>> obtenerGastosUltimos12Meses() async {
-  final gastos = await LocalDatabase.obtenerGastos();
-  final now = DateTime.now();
-  final Map<String, double> gastosMensuales = {};
-
-  // Inicializar los últimos 12 meses
-  for (int i = 11; i >= 0; i--) {
-    final mes = DateTime(now.year, now.month - i, 1);
-    final key = DateFormat('yyyy-MM').format(mes);
-    gastosMensuales[key] = 0.0;
-  }
-
-  // Procesar gastos
-  for (var gasto in gastos) {
-    final fecha = DateTime.parse(gasto['date']);
-    final key = DateFormat('yyyy-MM').format(DateTime(fecha.year, fecha.month));
-    
-    // Solo sumar si el mes está en nuestros últimos 12 meses
-    if (gastosMensuales.containsKey(key)) {
-      gastosMensuales[key] = gastosMensuales[key]! + (gasto['amount'] as double);
-    }
-  }
-
-  return gastosMensuales;
-}
-
-
-
-
-
-// Grafico Circular 
-
-Widget construirGraficoCircular(Map<String, double> datos, BuildContext context) {
+Widget construirGraficoCircular(Map<String, double> datos, BuildContext context, int tabIndex) {
   
   //verifica si no hay datos para hacer el grafico
   if (datos.isEmpty) {return Center(child: Text("No hay datos disponibles"));}
 
-  final colores = [
-    Colors.red, Colors.blue, Colors.green, Colors.orange,
-    Colors.purple, Colors.teal, Colors.pink, Colors.brown,
-  ];
+  final colores = [Color.fromRGBO(102, 101, 71, 1),Color.fromRGBO(251, 46, 1, 1),Color.fromRGBO(111, 203, 159, 1),Color.fromRGBO(255, 226, 138, 1),Color.fromRGBO(255, 254, 179, 1),];
+        
+  //[(0,(String,double)),(1,(String,Double)),(2,(String,Double)),...]
+  final List<MapEntry<int,MapEntry<String,double>>> data = datos.entries.toList().asMap().entries.toList();
 
   double total = datos.values.fold(0, (sum, val) => sum + val);
   
@@ -475,12 +126,14 @@ Widget construirGraficoCircular(Map<String, double> datos, BuildContext context)
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            height: 250,
+            height: 300,
             child: Stack(
+              alignment: AlignmentGeometry.topCenter,
               children: [
+                Text("Resumen de Gastos Este Mes", style: style1,),
                 PieChart(
                   PieChartData(
-                    sections: datos.entries.toList().asMap().entries.map((entry) {
+                    sections: data.map((entry) {
                       
                       final index = entry.key;
                       final value = entry.value.value;
@@ -512,47 +165,35 @@ Widget construirGraficoCircular(Map<String, double> datos, BuildContext context)
                     pieTouchData: PieTouchData(
                       touchCallback: (FlTouchEvent event, pieTouchResponse) {
                           if (pieTouchResponse?.touchedSection != null && pieTouchResponse!.touchedSection!.touchedSectionIndex >= 0) {
-                          final section = pieTouchResponse.touchedSection!;
-                          final category = datos.keys.elementAt(section.touchedSectionIndex);
-                          final amount = datos[category]!;
-                          
-                          if (event is FlLongPressStart || 
-                              event is FlLongPressMoveUpdate ||
-                              event is FlPanStartEvent ||
-                              event is FlPanUpdateEvent) {
-                            setState(() {
-                              showTooltip = true;
-                              currentAmount = amount;
-                              tooltipPosition = event.localPosition!;
-                              touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                              sectionMargin = 10;
-                            });
-                          }
-                          
-                          if (event is FlLongPressEnd || event is FlPanEndEvent) {
-                            setState(() {
-                              showTooltip = false;
-                              sectionMargin = 2;
-                            });
-                          }
-                        } else if (event is FlLongPressEnd || event is FlPanEndEvent) {
-                          setState(() {
-                            showTooltip = false;
-                            sectionMargin = 2;
-                          });
-                        }
+                            
+                            if (event.isInterestedForInteractions) {
+                              setState(() {
+                                showTooltip = true;
+                                touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                currentAmount = data[touchedIndex].value.value;
+                                tooltipPosition = event.localPosition!;
+                                sectionMargin = 10;
+                              });
+                            }
+                            
+                            if (!event.isInterestedForInteractions) {
+                              setState(() {
+                                showTooltip = false;
+                                sectionMargin = 2;
+                              });
+                            }
+                        } 
                       },
                       enabled: true,
                       longPressDuration: const Duration(milliseconds: 100),
                     ),
                     centerSpaceRadius: 0,
                     sectionsSpace: sectionMargin,
-                    startDegreeOffset: 180,
+                    startDegreeOffset: 0,
                   ),
                   duration: Duration(milliseconds: 100),
                 ),
-                if (showTooltip)
-                  AnimatedPositioned(
+                if (showTooltip) AnimatedPositioned(
                     duration: Duration(milliseconds: 200),
                     left: tooltipPosition.dx - 70,
                     top: tooltipPosition.dy -100,
@@ -569,7 +210,7 @@ Widget construirGraficoCircular(Map<String, double> datos, BuildContext context)
                         ],
                       ),
                       child: Text(
-                        '${NumberFormat("#,##0", "es_COP").format(currentAmount)} pesos.',
+                        '${NumberFormat.currency(locale: localeList[tabIndex],symbol: '${tabsList[tabIndex].data}',decimalDigits:  decimalList[tabIndex],customPattern: '#,##0.## ¤').format(currentAmount)}.',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -587,7 +228,7 @@ Widget construirGraficoCircular(Map<String, double> datos, BuildContext context)
             style: const TextStyle(fontSize: 18),
           ),
           Text(
-            NumberFormat.currency(locale: 'es_CO', symbol: 'COP', decimalDigits: 0).format(total),
+            NumberFormat.currency(locale: localeList[tabIndex], symbol: '${tabsList[tabIndex].data}', decimalDigits: decimalList[tabIndex],customPattern: '#,##0.## ¤').format(total),
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
         ],
@@ -595,6 +236,59 @@ Widget construirGraficoCircular(Map<String, double> datos, BuildContext context)
     },
   );
 }
+
+
+
+
+
+
+//!                                 Bar Chart ---- Data Integrity Check Method
+
+  Widget _buildBarChartSection(int tabIndex) {
+  return ValueListenableBuilder<bool>(
+    valueListenable: ExpenseNotifiers.overviewNotifier,
+    builder: (context,_,__) {
+      return  FutureBuilder<Map<String, double>>(
+        future: obtenerGastosUltimos12Meses(tabIndex),
+        builder: (context, snapshot) {
+
+          if (snapshot.connectionState == ConnectionState.waiting) {return const Center(child: CircularProgressIndicator());}
+          if (snapshot.hasError) {return Center(child: Text("Error: ${snapshot.error}"));}
+          if (snapshot.data == null || snapshot.data!.isEmpty) { return Center(child: Padding(padding: EdgeInsets.all(20),child: Text("No hay gastos para graficar",style: style1,textAlign: TextAlign.center,),),);}
+          
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+            children: [
+              Text("Gastos mensuales últimos 12 meses", style: style2),
+              construirGraficoBarras(snapshot.data!),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -665,7 +359,7 @@ Widget construirGraficoBarras(Map<String, double> datos) {
   final intervalos = calcularIntervalos(maxY);
 
   return SizedBox(
-    height: 180,
+    height: 280,
     child: BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
